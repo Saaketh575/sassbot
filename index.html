@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SassBot - AI Sassy Message Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .sass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-4">SassBot</h1>
+            <p class="text-white/80 text-lg">Generate perfectly sassy messages for any situation</p>
+            <div id="aiStatus" class="mt-2 text-white/60 text-sm">Using enhanced sass database</div>
+        </div>
+        
+        <div class="max-w-2xl mx-auto sass-card rounded-2xl p-8 shadow-2xl">
+            <form id="sassForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Context (optional)</label>
+                    <textarea 
+                        id="context" 
+                        class="w-full p-3 border rounded-lg resize-none"
+                        rows="3"
+                        placeholder="Tell me what you're responding to..."
+                    ></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-4">Sass Level</label>
+                    <div class="grid grid-cols-3 gap-4">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="sassLevel" value="mild" class="sr-only">
+                            <div class="sass-option p-4 border-2 rounded-lg text-center hover:bg-blue-50 transition-colors" data-level="mild">
+                                <div class="text-2xl mb-2">😊</div>
+                                <div class="font-medium">Mild</div>
+                                <div class="text-sm text-gray-600">Gentle shade</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="sassLevel" value="medium" class="sr-only" checked>
+                            <div class="sass-option p-4 border-2 rounded-lg text-center hover:bg-orange-50 transition-colors border-orange-500 bg-orange-50" data-level="medium">
+                                <div class="text-2xl mb-2">😏</div>
+                                <div class="font-medium">Medium</div>
+                                <div class="text-sm text-gray-600">Balanced attitude</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="sassLevel" value="spicy" class="sr-only">
+                            <div class="sass-option p-4 border-2 rounded-lg text-center hover:bg-red-50 transition-colors" data-level="spicy">
+                                <div class="text-2xl mb-2">🔥</div>
+                                <div class="font-medium">Spicy</div>
+                                <div class="text-sm text-gray-600">Maximum sass</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- AI API Key Input -->
+                <div class="border-t pt-4">
+                    <details class="cursor-pointer">
+                        <summary class="text-sm font-medium mb-2 hover:text-purple-600">⚡ Enable AI Responses (Optional)</summary>
+                        <div class="mt-3">
+                            <label class="block text-xs text-gray-600 mb-1">OpenAI API Key (for personalized responses)</label>
+                            <input 
+                                type="password" 
+                                id="apiKey" 
+                                class="w-full p-2 border rounded text-sm"
+                                placeholder="sk-..."
+                            >
+                            <p class="text-xs text-gray-500 mt-1">
+                                Get API key from <a href="https://platform.openai.com" target="_blank" class="text-blue-600 underline">platform.openai.com</a>
+                            </p>
+                            <div id="debugInfo" class="mt-2 text-xs text-gray-600 hidden"></div>
+                        </div>
+                    </details>
+                </div>
+                
+                <button 
+                    type="submit" 
+                    class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all"
+                >
+                    Generate Sassy Messages
+                </button>
+            </form>
+            
+            <div id="results" class="mt-8 space-y-4 hidden">
+                <h3 class="text-lg font-medium">Your Sassy Messages:</h3>
+                <div id="messagesList" class="space-y-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced sass database combining both approaches
+        const sassyDatabase = {
+            // Context-aware responses
+            greeting: [
+                "Oh, hello sunshine! What gossip do you bring today?",
+                "Hey yourself! Ready for some sass?",
+                "Hi hi! Spill the tea already!",
+                "Well, look who decided to show up!",
+                "Hey! I was just thinking about ignoring you.",
+                "Hello! Ready to be dazzled by my brilliance?"
+            ],
+            help: [
+                "Help? Darling, I'm your dazzling savior. What's the drama?",
+                "Need assistance? I got you — but only if you behave!",
+                "Alright, what mess did you get yourself into this time?",
+                "I can help, but my rate is one compliment per minute.",
+                "Help? You found the sassiest hotline in town!"
+            ],
+            problem: [
+                "Uh-oh, problems? Spill it, I'm all ears and sass.",
+                "Another problem? You really love drama, don't you?",
+                "Problems? Pfft, I eat those for breakfast.",
+                "If trouble was a sport, you'd be a gold medalist.",
+                "Sounds like you need a hug… or a reality check."
+            ],
+            thanks: [
+                "You're welcome! Don't get too dependent on me now.",
+                "No problem! But I expect compliments.",
+                "Thanks accepted, tip jar is over there 👉",
+                "You're welcome! Now go conquer the world.",
+                "Don't mention it… but seriously, mention it."
+            ],
+            goodbye: [
+                "Finally leaving? Don't be a stranger, darling!",
+                "Bye bye! Don't miss me too much.",
+                "See ya! Try not to get into trouble.",
+                "Later, tater! Stay sassy.",
+                "Peace out! May your day be as fabulous as me."
+            ],
+            // General sass by level
+            mild: [
+                "That's... interesting.",
+                "Sure, if you say so.", 
+                "Oh, okay then.",
+                "I see what you did there.",
+                "Mmm, bold choice.",
+                "Well, you tried.",
+                "How... creative.",
+                "That's one way to look at it.",
+                "Fascinating perspective.",
+                "I'm sure that made sense to you.",
+                "Noted.",
+                "Right...",
+                "If you think so.",
+                "That's certainly... something.",
+                "Interesting take.",
+                "Well then.",
+                "I suppose.",
+                "Sure thing, boss.",
+                "Whatever works for you.",
+                "Alright, I guess.",
+                "Is that all? Come on, be more interesting!",
+                "Try harder next time, sweetie.",
+                "You've got my attention... barely."
+            ],
+            medium: [
+                "Really? That's your take?",
+                "Bold choice there.",
+                "Well, that happened.",
+                "The confidence is impressive.",
+                "I'm not saying you're wrong, but...",
+                "That's certainly one way to see it.",
+                "Interesting perspective.",
+                "The audacity is noted.",
+                "I have... questions.",
+                "That's a choice you made.",
+                "Imagine thinking that.",
+                "Sure, let's go with that.",
+                "You really went there, huh?",
+                "The bar was set low and you found it.",
+                "That's... quite the opinion.",
+                "Fascinating logic.",
+                "I'm confused but intrigued.",
+                "That's definitely words.",
+                "The creativity is concerning.",
+                "I wasn't ready for that level of wrong.",
+                "Hmm, I might pretend to care, but I really don't.",
+                "Oh honey, you're a handful, aren't you?",
+                "You talk a lot for someone with no idea."
+            ],
+            spicy: [
+                "Oh honey, no.",
+                "The audacity is real.",
+                "I cannot even begin to explain how wrong this is.",
+                "Bless your heart.",
+                "That's certainly a choice you made.",
+                "The secondhand embarrassment is strong.",
+                "I'm speechless... and that's saying something.",
+                "Sir, this is a Wendy's.",
+                "The bar was on the floor and you brought a shovel.",
+                "I would explain it to you but I don't have crayons.",
+                "That's not how any of this works.",
+                "The confidence is unmatched by the accuracy.",
+                "I'm calling the authorities.",
+                "That's enough internet for today.",
+                "The math isn't mathing.",
+                "We need to have a conversation.",
+                "I'm concerned about your decision-making process.",
+                "That's a bold strategy, Cotton.",
+                "The lies are lying.",
+                "You really woke up and chose violence.",
+                "Are you done yet? My patience is running thin.",
+                "I could explain, but where's the fun in that?",
+                "Keep going, I'm taking mental notes for later."
+            ]
+        };
+
+        // Context detection patterns
+        const contextPatterns = {
+            greeting: /\b(hello|hi|hey|greetings|yo|sup)\b/i,
+            help: /\b(help|assist|support|aid|problem)\b/i,
+            problem: /\b(issue|trouble|bug|glitch|broken|error)\b/i,
+            thanks: /\b(thank|thanks|thx|gracias|appreciate)\b/i,
+            goodbye: /\b(bye|goodbye|see you|later|ciao|farewell)\b/i
+        };
+
+        // Handle sass level selection
+        document.querySelectorAll('.sass-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.sass-option').forEach(o => {
+                    o.classList.remove('border-blue-500', 'bg-blue-50', 'border-orange-500', 'bg-orange-50', 'border-red-500', 'bg-red-50');
+                    o.classList.add('border-gray-200');
+                });
+                
+                const level = option.dataset.level;
+                const colors = {
+                    mild: ['border-blue-500', 'bg-blue-50'],
+                    medium: ['border-orange-500', 'bg-orange-50'],
+                    spicy: ['border-red-500', 'bg-red-50']
+                };
+                
+                option.classList.remove('border-gray-200');
+                option.classList.add(...colors[level]);
+                
+                document.querySelector(`input[value="${level}"]`).checked = true;
+            });
+        });
+
+        // Debug function
+        function showDebug(message) {
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.textContent = message;
+            debugDiv.classList.remove('hidden');
+            console.log('DEBUG:', message);
+        }
+
+        // Handle form submission
+        document.getElementById('sassForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const context = document.getElementById('context').value;
+            const sassLevel = document.querySelector('input[name="sassLevel"]:checked').value;
+            const apiKey = document.getElementById('apiKey').value;
+            const button = e.target.querySelector('button');
+            
+            // Clear previous debug info
+            document.getElementById('debugInfo').classList.add('hidden');
+            
+            button.textContent = 'Generating...';
+            button.disabled = true;
+            
+            try {
+                let messages;
+                
+                // Try AI generation first if API key provided
+                if (apiKey && apiKey.trim().startsWith('sk-')) {
+                    try {
+                        showDebug('Attempting AI generation...');
+                        document.getElementById('aiStatus').textContent = 'Generating AI responses...';
+                        messages = await generateWithAI(context, sassLevel, apiKey.trim());
+                        showDebug('AI generation successful!');
+                        document.getElementById('aiStatus').textContent = 'AI-powered responses';
+                    } catch (error) {
+                        showDebug(`AI failed: ${error.message}`);
+                        console.error('AI generation failed:', error);
+                        messages = generateSmartMessages(context, sassLevel);
+                        document.getElementById('aiStatus').textContent = 'Using enhanced sass database (AI failed)';
+                    }
+                } else {
+                    messages = generateSmartMessages(context, sassLevel);
+                    document.getElementById('aiStatus').textContent = 'Using enhanced sass database';
+                }
+                
+                displayResults(messages);
+            } catch (error) {
+                showDebug(`General error: ${error.message}`);
+                alert('Error generating messages. Please try again.');
+            } finally {
+                button.textContent = 'Generate Sassy Messages';
+                button.disabled = false;
+            }
+        });
+
+        // Smart message generation with context awareness
+        function generateSmartMessages(context, sassLevel) {
+            let selectedMessages = [];
+            
+            // Check for context patterns first
+            if (context) {
+                for (const [category, pattern] of Object.entries(contextPatterns)) {
+                    if (pattern.test(context)) {
+                        selectedMessages = [...sassyDatabase[category]];
+                        break;
+                    }
+                }
+            }
+            
+            // If no context match or no context, use sass level
+            if (selectedMessages.length === 0) {
+                selectedMessages = [...sassyDatabase[sassLevel]];
+            }
+            
+            // Proper random shuffle using Fisher-Yates algorithm
+            for (let i = selectedMessages.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [selectedMessages[i], selectedMessages[j]] = [selectedMessages[j], selectedMessages[i]];
+            }
+            
+            // Select 3-5 random messages
+            const numMessages = Math.floor(Math.random() * 3) + 3;
+            const selected = selectedMessages.slice(0, numMessages);
+            
+            return selected.map(text => ({
+                text,
+                sassLevel,
+                characterCount: text.length,
+                source: 'enhanced'
+            }));
+        }
+
+        // Generate messages using OpenAI API
+        async function generateWithAI(context, sassLevel, apiKey) {
+            showDebug('Starting AI generation...');
+            
+            const prompt = `You are a witty, sassy response generator. Create exactly 4 ${sassLevel === 'mild' ? 'mildly sassy and playful' : sassLevel === 'medium' ? 'moderately sassy with clear attitude but not mean-spirited' : 'maximum sass, brutally honest and unapologetically sassy'} text message responses. 
+
+Keep responses under 100 characters each and suitable for texting. Make them clever, witty, and memorable.
+
+${context ? `Context/situation: "${context}"` : 'Generate general sassy responses for texting situations.'}
+
+Return ONLY valid JSON in this exact format:
+{"messages": ["response1", "response2", "response3", "response4"]}`;
+
+            showDebug('Making API request...');
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    response_format: { type: "json_object" },
+                    max_tokens: 300,
+                    temperature: 0.9
+                })
+            });
+
+            showDebug(`API response status: ${response.status}`);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                showDebug(`API error: ${errorText}`);
+                throw new Error(`OpenAI API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            showDebug('API response received successfully');
+            
+            const result = JSON.parse(data.choices[0].message.content);
+            showDebug(`Parsed ${result.messages.length} messages`);
+            
+            return result.messages.map(text => ({
+                text,
+                sassLevel,
+                characterCount: text.length,
+                source: 'ai'
+            }));
+        }
+
+        // Display results
+        function displayResults(messages) {
+            const resultsDiv = document.getElementById('results');
+            const messagesList = document.getElementById('messagesList');
+            
+            const sourceIndicators = {
+                'ai': '<span class="text-green-600 text-xs font-bold">✨ AI Generated</span>',
+                'enhanced': '<span class="text-purple-600 text-xs font-bold">🧠 Smart Context-Aware</span>',
+                'builtin': '<span class="text-blue-600 text-xs">📝 Built-in Examples</span>'
+            };
+            
+            const sourceIndicator = sourceIndicators[messages[0]?.source] || sourceIndicators.builtin;
+            
+            messagesList.innerHTML = `
+                <div class="text-center mb-4">${sourceIndicator}</div>
+                ${messages.map(msg => `
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <div class="flex justify-between items-start">
+                            <p class="text-gray-800 flex-1">"${msg.text}"</p>
+                            <button 
+                                onclick="copyToClipboard('${msg.text.replace(/'/g, "\\'")}', this)"
+                                class="ml-3 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex-shrink-0"
+                            >
+                                Copy
+                            </button>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2">
+                            ${msg.characterCount} characters • ${msg.sassLevel} sass
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+            
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                const original = button.textContent;
+                button.textContent = 'Copied!';
+                button.classList.remove('bg-blue-600');
+                button.classList.add('bg-green-600');
+                setTimeout(() => {
+                    button.textContent = original;
+                    button.classList.remove('bg-green-600');
+                    button.classList.add('bg-blue-600');
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                const original = button.textContent;
+                button.textContent = 'Copied!';
+                setTimeout(() => button.textContent = original, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
